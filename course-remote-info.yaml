@@ -1,0 +1,96 @@
+hyperskill_project:
+  id: 521
+  ide_files: https://hyperskill.org/api/projects/521/additional-files/additional_files.json
+  is_template_based: false
+  use_ide: true
+  environment: unittest
+update_date: "Thu, 01 Jan 1970 00:00:00 UTC"
+stages:
+  - id: 3051
+    step: 52270
+    is_completed: false
+  - id: 3052
+    step: 52271
+    is_completed: false
+  - id: 3053
+    step: 52273
+    is_completed: false
+  - id: 3054
+    step: 52274
+    is_completed: false
+  - id: 3055
+    step: 52275
+    is_completed: false
+  - id: 3056
+    step: 52276
+    is_completed: false
+topics:
+  0:
+    - title: Introduction to LLMs
+      theory_id: 51833
+    - title: Introduction to prompt engineering
+      theory_id: 43279
+    - title: Introduction to the OpenAI API
+      theory_id: 53368
+    - title: Function calling with the OpenAI API
+      theory_id: 53369
+    - title: LangChain basics
+      theory_id: 53049
+    - title: Introduction to vector search
+      theory_id: 51979
+    - title: Hierarchical navigable small worlds
+      theory_id: 52669
+    - title: World Wide Web
+      theory_id: 6633
+    - title: Introduction to machine learning
+      theory_id: 10403
+    - title: Introduction to neural networks
+      theory_id: 25701
+    - title: "How the web works: clients, servers, and browsers"
+      theory_id: 52811
+    - title: Introduction to retrieval-augmented generation
+      theory_id: 51908
+    - title: Query augmentation techniques
+      theory_id: 52324
+    - title: Text chunking techniques
+      theory_id: 52101
+    - title: Libraries
+      theory_id: 8504
+    - title: Frameworks
+      theory_id: 6701
+    - title: What are databases
+      theory_id: 8497
+    - title: "SQL: structured query language"
+      theory_id: 7054
+    - title: JSON
+      theory_id: 6854
+    - title: Natural language processing
+      theory_id: 9157
+    - title: Introduction to NLTK
+      theory_id: 31188
+    - title: Overview of SpaCy
+      theory_id: 11197
+    - title: Introduction to API
+      theory_id: 17007
+    - title: Tokenization
+      theory_id: 51949
+    - title: Tokenization implementation
+      theory_id: 10363
+    - title: Bag-of-words
+      theory_id: 23015
+    - title: The overview of text similarity metrics
+      theory_id: 22997
+    - title: Word embeddings
+      theory_id: 25209
+    - title: Contextualized embeddings
+      theory_id: 34137
+    - title: Working with environment variables and .env files
+      theory_id: 41735
+    - title: Introduction to Hugging Face
+      theory_id: 30070
+    - title: Hugging Face datasets
+      theory_id: 30092
+    - title: Introduction to PostgreSQL
+      theory_id: 17974
+    - title: Overview of PGVector
+      theory_id: 52002

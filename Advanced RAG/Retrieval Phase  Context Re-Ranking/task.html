@@ -1,0 +1,53 @@
+<div class="step-text">
+<h5 id="description">Description</h5><p>At this point, our retrieval mechanism is performing well. Great! We are getting the most appropriate chunks needed to answer any question a user may have. In basic RAG setups, the next thing would be to pass all the retrieved contexts (along with any chat history available) to the LLM. This might be okay if you are using a long context LLM, as everything would fit into the LLM's context window.</p><p>Unfortunately, not all retrieved contexts are needed to answer the query. In some cases, the LLM only needs the best one or two documents to answer the question sufficiently. Also, passing more documents means more tokens are used, which is more costly even though not all documents are needed.</p><p>This is where context-ranking techniques become useful. Here, you score the chunks by how relevant they are to the user's prompt. Only chunks with the highest scores are sent to the LLM. For instance, you might decide that only the top two chunks will be sent to the LLM. This ensures that you save costs while maintaining relevance in your RAG application.</p><p>There are various ways you can use to determine the best chunks. For example, you can prioritize chunks from internal documentation rather than information from a web search. Or, the most recent information should receive the highest priority. You can also use an LLM, fine-tuned models such as the <a href="https://docs.cohere.com/v2/docs/rerank-overview" rel="noopener noreferrer nofollow" target="_blank">cohere re-ranker</a>, and other LLM evaluation techniques using libraries like Ragas to identify the most relevant chunks. You can use multiple re-ranking techniques for the best results.</p><p>In this stage, we will use <a href="https://docs.cohere.com/reference/rerank?ref=cohere-ai.ghost.io" rel="noopener noreferrer nofollow" target="_blank">Cohere's reranking endpoint</a> to rank the retrieved contexts. You can get started using it for free by getting an API key from <a href="https://dashboard.cohere.ai/" rel="noopener noreferrer nofollow" target="_blank">their website</a>, but there will be some <a href="https://docs.cohere.com/docs/rate-limits" rel="noopener noreferrer nofollow" target="_blank">usage limits</a>. The free trial should be enough for our use case. Below is an example of initializing Cohere reranker from the <code class="language-python">langchain_cohere</code> package:</p><pre><code class="language-python">from langchain_cohere import CohereRerank
+
+reranker = CohereRerank(
+    model="rerank-english-v3.0",
+    top_n=2,
+    cohere_api_key=os.getenv("COHERE_API_KEY"),
+)</code></pre><p>Once you have the API key, retrieve the top 10 most relevant chunks from the vector store. Then, use the re-ranker to get the top 2 most relevant documents. Print the contents of the top 2 documents as ranked by Cohere.</p><div class="alert alert-primary"><p>If you'd like to learn more about using Cohere's re-ranker with your LangChain retriever, check out the <a href="https://python.langchain.com/docs/integrations/retrievers/cohere-reranker/" rel="noopener noreferrer nofollow" target="_blank">LangChain documentation</a>.</p></div><h5 id="objectives">Objectives</h5><p>These are the objectives for this stage:</p><ul><li><p>Retrieve the 10 most relevant chunks from the vector store;</p></li><li><p>Send the chunks to Cohere's re-rank endpoints for scoring;</p></li><li><p>Print the contents of the ten most relevant chunks retrieved from the vector store;</p></li><li><p>Print the contents of the top 2 scored chunks along with their metadata.</p></li></ul><h5 id="examples">Examples</h5><p>Example 1: <em>Top 10 most relevant chunks</em></p><pre><code class="language-json">&gt; Support channels. 
+Hypothetical Document:
+- question: What support channels are available for assistance? - answer: You can reach our support team through various channels, including email, live chat, and phone. Visit our website for detailed contact information and support hours to get the assistance you need.  
+- question: Can I access support over the weekend? - answer: Our support channels are available 24/7, including weekends. Please feel free to reach out at any time, and our dedicated team will be ready to assist you.  
+- policy: All support inquiries will be addressed within 24 hours during business days. If your inquiry requires additional time, we will inform you of the expected response time.  
+- policy: For urgent issues, please use our live chat option for immediate assistance. Our representatives are trained to handle high-priority concerns swiftly.  
+- question: How can I submit feedback about my support experience? - answer: We encourage you to submit feedback via our website's feedback form or directly through the support channels you used. Your insights help us improve our services.  
+- policy: Feedback provided by customers is reviewed regularly to enhance support efficiency and quality. Thank you for helping us serve you better!
+100%|██████████| 1/1 [00:01&lt;00:00,  1.14s/it]
+
+Contexts:
+support: You can contact our customer support team by phone at &lt;https://support.hypersite.org&gt; or by email at hello@hypersite.org.
+support: Our team is available 24/7 to assist you with any inquiries or issues you may have.
+support: We offer live chat support on our website during our business hours.
+question: Can I return a product if I changed my mind?
+answer: Yes, you can return a product if you changed your mind. Please ensure the product is in its original condition and packaging, and refer to our return policy for instructions.
+question: Do you offer live chat support?
+answer: Yes, we offer live chat support on our website during our business hours. Look for the chat icon in the bottom right corner to initiate a chat with our customer support team.
+
+# ... more entries
+
+question: How can I contact customer support?
+answer: You can contact our customer support team by phone at [phone number] or by email at [email address]. Our team is available [working hours] to assist you with any inquiries or issues you may have.
+
+policy: By using our website, you agree to comply with our acceptable use guidelines.
+policy: Promotional codes are subject to terms and may not be combined with other offers.
+policy: Abuse of return or exchange policies may result in account suspension.
+policy: We are committed to protecting customer data and online transactions.
+policy: Customer support is available 24/7 through chat and email.</code></pre><p>Example 2: <em>Top 2 most relevant chunks with relevance score</em></p><pre><code class="language-json">&gt; Support channels
+Compressed Contexts:
+support: You can contact our customer support team by phone at &lt;https://support.hypersite.org&gt; or by email at hello@hypersite.org.
+support: Our team is available 24/7 to assist you with any inquiries or issues you may have.
+support: We offer live chat support on our website during our business hours.
+{'tags': ['customer support', 'live chat', 'contact methods'], 'category': 'support', 'relevance_score': 0.98527133}
+question: Can I return a product if I changed my mind?
+answer: Yes, you can return a product if you changed your mind. Please ensure the product is in its original condition and packaging, and refer to our return policy for instructions.
+*question: Do you offer live chat support?*
+*answer: Yes, we offer live chat support on our website during our business hours. Look for the chat icon in the bottom right corner to initiate a chat with our customer support team.*
+question: Can I order a product as a gift?
+answer: Yes, you can order a product as a gift and have it shipped directly to the recipient. During the checkout process, you can enter the recipient's shipping address.
+question: What should I do if my discount code is not working?
+answer: If your discount code is not working, please double-check the terms and conditions associated with the code. If the issue persists, contact our customer support team for assistance.
+question: Can I return a product if it was a final sale item?
+answer: Final sale items are usually non-returnable and non-refundable. Please review the product description or contact our customer support team to confirm the return eligibility for specific items.
+{'tags': ['frequently asked questions', 'help', 'general information'], 'category': 'qa', 'relevance_score': 0.97423947}</code></pre>
+</div>

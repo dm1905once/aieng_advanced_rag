@@ -1,0 +1,8 @@
+type: framework
+content:
+  - Loading Phase
+  - Embedding Phase
+  - Retrieval Phase  Query Decomposition
+  - Retrieval Phase  HyDE
+  - Retrieval Phase  Context Re-Ranking
+  - Retrieval Phase  Routing

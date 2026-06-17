@@ -1,0 +1,40 @@
+<div class="step-text">
+<h5 id="description">Description</h5><p>So far, we’ve used prompt rewriting techniques to enhance the user’s query. Now, we are going to use HyDE (Hypothetical Document Embeddings) to further enhance retrieval. With <strong>HyDE</strong>, you use an LLM to generate a “hypothetical document” based on the user’s query, similar to what you’d obtain from the vector store. Then, you need to embed the generated document and use it to retrieve real documents instead of using the user’s original query. The hypothetical embedding is likely to contain more relevant keywords than the user’s query, which means you are more likely to receive more relevant results.</p><div class="alert alert-primary"><p>You can read more about HyDE in the <a href="https://arxiv.org/pdf/2212.10496" rel="noopener noreferrer nofollow" target="_blank">research paper</a>.</p></div><p>When a user asks a question, prompt the LLM to come up with a probable document that would be retrieved to answer the question. In your prompt, you need to ask the LLM to generate a short summary emphasizing keywords that would most likely be found in a real document on that topic. Then, use the summary to find the top most relevant chunks. If the query involves using a relational database, the LLM should include keywords to ensure the right tool is called.</p><h5 id="objectives">Objectives</h5><p>To pass the stage:</p><ul><li><p>Once a query is received, use an LLM to generate a hypothetical document that would best answer the question;</p></li><li><p>Few-shot the LLM to generate the hypothetical document in the same format as your real documents;</p></li><li><p>Print the contents of the generated hypothetical document;</p></li><li><p>Embed the hypothetical document and use it to retrieve real documents from the vector store (when using LangChain retrievers, embedding is automatically done behind the scenes);</p></li><li><p>Print the contents of the retrieved documents as well as order records.</p></li></ul><h5 id="examples">Examples</h5><p>The greater-than symbol followed by a space (<code class="language-shell">&gt;</code> ) represents the user input. Note that it's not part of the input.</p><p>Example 1.1: <em>Hypothetical support document</em></p><pre><code class="language-shell">&gt; How can I contact support? 
+Hypothetical Document:
+- question: How can I contact customer support? 
+- answer: You can contact our customer support team via email at support@example.com or by calling our toll-free number at 1-800-555-0199. Our agents are available 24/7 to assist you with your inquiries and concerns.
+- question: What support channels are available? 
+- answer: We offer multiple support channels including live chat on our website, email support, and phone support. Choose the option that works best for you, and we’ll be glad to help!
+- policy: Our support team responds to emails within 24 hours. If you require immediate assistance, please reach out through live chat or call our support hotline.
+- policy: Customer support is available during holidays. You can always reach us through our online ticketing system, which operates 24/7, for any urgent issues. 
+- question: Is there a live chat option for support? - answer: Yes, we provide a live chat feature on our website where you can connect with a support representative instantly during business hours.</code></pre><p>Example 1.2: <em>Retrieved contexts using hypothetical support document</em></p><pre><code class="language-shell">Contexts:
+support: You can contact our customer support team by phone at https://support.hypersite.org or by email at hello@hypersite.org.
+support: Our team is available 24/7 to assist you with any inquiries or issues you may have.
+support: We offer live chat support on our website during our business hours.
+{'tags': ['customer support', 'live chat', 'contact methods'], 'category': 'support'}
+question: How long does shipping take?
+# ... more entries
+question: How can I contact customer support?
+answer: You can contact our customer support team by phone at [phone number] or by email at [email address]. Our team is available [working hours] to assist you with any inquiries or issues you may have.
+{'tags': ['frequently asked questions', 'help', 'general information'], 'category': 'qa'}</code></pre><p>Example 2.1: <em>Hypothetical policy document</em></p><pre><code class="language-shell">&gt; I need to track my order
+Hypothetical Document:
+- question: How can I track my order? 
+- answer: You can track your order by visiting our website and entering your order number in the "Order Tracking" section. You will receive real-time updates regarding your shipment status and estimated delivery date. 
+- question: What should I do if my tracking information is not updating? 
+- answer: If your tracking information is not updating, please contact our customer support team. They will provide you with the latest information and assist you with any issues regarding your shipment.
+- policy: Orders are typically processed within 1-2 business days. Once shipped, you will receive a confirmation email with your tracking details. 
+- policy: If your order has been delayed, please check your tracking information and allow 1-2 additional business days for updates. 
+- policy: For international orders, please be aware that customs and shipping times may vary, affecting your tracking updates.</code></pre><p>Example 2: <em>Retrieved contexts from the hypothetical policy document</em></p><pre><code class="language-shell">Contexts:
+question: How long does shipping take?
+answer: Shipping times vary depending on the destination and the shipping method chosen. Standard shipping usually takes 3-5 business days, while express shipping can take 1-2 business days.
+question: Do you offer international shipping?
+answer: Yes, we offer international shipping to select countries. The availability and shipping costs will be calculated during the checkout process based on your location.
+# ... more entries
+question: How can I track my order?
+answer: You can track your order by logging into your account and navigating to the 'Order History' section. There, you will find the tracking information for your shipment.
+question: What is your return policy?
+answer: Our return policy allows you to return products within 30 days of purchase for a full refund, provided they are in their original condition and packaging. Please refer to our Returns page for detailed instructions.
+question: Can I cancel my order?
+answer: You can cancel your order if it has not been shipped yet. Please contact our customer support team with your order details, and we will assist you with the cancellation process.
+{'tags': ['frequently asked questions', 'help', 'general information'], 'category': 'qa'}</code></pre>
+</div>

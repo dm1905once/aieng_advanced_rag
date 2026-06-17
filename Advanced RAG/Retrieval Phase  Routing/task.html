@@ -1,0 +1,33 @@
+<div class="step-text">
+<h5 id="description">Description</h5><p>We’ve used an LLM to decompose a user’s query into multiple queries that capture the user’s intent. We’ve also used HyDE and used context ranking techniques. This enhanced our retrieval mechanism making it possible to retrieve all the relevant chunks needed to answer a user’s query. However, we have more than one data source. We’d like a way to translate the user’s query to a format more suitable for the data source. This will allow us to retrieve data from multiple data stores.</p><p>We have both a relational database as well as a vector store for different types of data. We need to ensure that if records from a relational database are needed, the query is translated into an SQL statement as well as raw input for a general query. Once we obtain contexts from both sources, we can combine them all and pass them to the LLM.</p><p>There are multiple way you can implement routing. The most efficient one would be using LangChain tools. The LLM will determine which tool, or combination of tools, to use depending on the user’s query and pass the right parameters to it. Once you retrieve all contexts, combine them and pass them to the LLM, along with any additional instructions and chat history, to get the final response.</p><div class="alert alert-primary"><p>To make it easier to create an accurate database query command, ensure to specify the database schema in the docstring for the database query tool.</p></div><h5 id="objectives">Objectives</h5><p>Here is what you need to do at this stage:</p><ul><li><p>Create two tools to interact with the data stores depending on the user’s query. The LLM should automatically translate the user’s query into a format more suitable for the data store to use;</p></li><li><p>Once a query is issued, the LLM should select the appropriate data store, pass the right parameters, and retrieve the appropriate context. Context could either be chunks from a vector store or order details from the database, or both;</p></li><li><p>Print the contexts retrieved from the data stores;</p></li><li><p>Pass the retrieved contexts to the LLM and print the final response;</p></li></ul><h5 id="examples">Examples</h5><p>Example 1: <em>No response if no context</em></p><pre><code class="language-json">&gt; I need to return something. 
+[]
+I’m here to help you with your return! However, I currently don't have specific information regarding the return process. Please check our website or contact customer support for detailed instructions on how to return your item.</code></pre><p>Example 2: <em>Context from the vector search tool</em></p><pre><code class="language-json">&gt; How do I contact support? 
+100%|██████████| 1/1 [00:00&lt;00:00,  1.24it/s]
+Relevant chunks: 
+support: You can contact our customer support team on our website at https://support.hypersite.org or by email at hello@hypersite.org.
+support: Our team is available 24/7 to assist you with any inquiries or issues you may have.
+support: We offer live chat support on our website during our business hours.
+
+You can contact our customer support team at [support.hypersite.org](https://support.hypersite.org) or by email at hello@hypersite.org. Our team is available 24/7 to assist you with any inquiries or issues you may have. Additionally, we offer live chat support on our website during our business hours.</code></pre><p>Example 3: <em>Context from database query tool passed to the LLM</em></p><pre><code class="language-json">&gt; I need details about my order b55f
+Order details: [('2025-04-15', 'b55f', 'bc26', 'iPhone', 'Phones and Accessories', '944 Walnut St, Boston, MA 02215', '700.0')]
+
+Your order b55f was placed on April 15, 2025. It includes the following details:
+
+- Item: iPhone
+- Category: Phones and Accessories
+- Shipping Address: 944 Walnut St, Boston, MA 02215
+- Total Amount: $700.00
+
+If you have any further questions or need assistance, feel free to ask!</code></pre><p>Example 4: Multiple contexts <em>passed to LLM</em></p><pre><code class="language-json">&gt; I need details about my order b55f. Also, how do I contact support?
+Order details: [('2025-04-15', 'b55f', 'bc26', 'iPhone', 'Phones and Accessories', '944 Walnut St, Boston, MA 02215', '700.0')]
+
+100%|██████████| 1/1 [00:01&lt;00:00,  1.07s/it]
+Relevant chunks: 
+support: You can contact our customer support team at https://support.hypersite.org or by email at hello@hypersite.org.
+support: Our team is available 24/7 to assist you with any inquiries or issues you may have.
+support: We offer live chat support on our website during our business hours.
+
+Your order b55f includes an iPhone from the category "Phones and Accessories." It was placed on April 15, 2025, and is being delivered to 944 Walnut St, Boston, MA 02215. The total amount for this order is $700.00.
+
+If you need to contact support, you can reach our customer support team on our website at https://support.hypersite.org  or by email at hello@hypersite.org. Our team is available 24/7 to assist you with any inquiries or issues you may have. Additionally, we offer live chat support on our website during business hours.</code></pre>
+</div>

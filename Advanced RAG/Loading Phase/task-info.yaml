@@ -1,0 +1,17 @@
+type: edu
+files:
+  - name: test/__init__.py
+    learner_created: false
+  - name: test/tests.py
+    learner_created: false
+  - name: main.py
+    visible: true
+    learner_created: false
+  - name: tests.py
+    learner_created: false
+  - name: knowledge_base_noisy.json
+    visible: true
+    learner_created: true
+feedback_link: https://hyperskill.org/projects/521/stages/3051/implement#comment
+status: Unchecked
+record: -1

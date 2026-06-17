@@ -1,0 +1,15 @@
+type: edu
+custom_name: "Retrieval Phase: Query Decomposition"
+files:
+  - name: main.py
+    visible: true
+    learner_created: false
+  - name: test/__init__.py
+    learner_created: false
+  - name: test/tests.py
+    learner_created: false
+  - name: tests.py
+    learner_created: false
+feedback_link: https://hyperskill.org/projects/521/stages/3053/implement#comment
+status: Unchecked
+record: -1
