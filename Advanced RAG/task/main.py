@@ -2,7 +2,18 @@ import json
 from langchain_text_splitters import RecursiveJsonSplitter
 from langchain_core.documents import Document
 
-def clean_input_file(path: str):
+documents = []
+
+def create_lang_document(doc_list: list, metadata: dict) -> int:
+    chunks = [doc_list[i:i + 5] for i in range(0, len(doc_list), 5)]
+    for chunk in chunks:
+        documents.append(Document(
+            page_content=' '.join(str(item).replace("'","") for item in chunk),
+            metadata=metadata
+        ))
+    return len(chunks)
+
+def load_knowledge_base(path: str):
     questions = []
     policies = []
     steps = []
@@ -31,24 +42,26 @@ def clean_input_file(path: str):
 
     # Create langchain docs with metadata, 5 entries of each type per doc
     # splitter = RecursiveJsonSplitter(max_chunk_size=3000)
-    documents = []
-    chunks = [questions[i:i + 5] for i in range(0, len(questions), 5)]
-    for chunk in chunks:
-        documents.append(Document(
-            page_content=chunk,
-            metadata={
-                    "category": "faq",
-                    "tags": ["frequently asked questions", "help", "general information"]
-                }
-        ))
-        # print(documents)
-        print("=====")
+    chunks_questions = create_lang_document(questions, {"category": "faq", "tags": ["frequently asked questions", "help", "general information"]})
+    chunks_policies = create_lang_document(policies, {"category": "policy","tags": ["shipping", "returns", "privacy"]})
+    chunks_steps = create_lang_document(steps, {"category": "how-to","tags": ["steps", "guides", "instructions"]})
+    chunks_supports = create_lang_document(supports, {"category": "support", "tags": ["customer support", "live chat", "contact methods"]})
+
 
     # Save clean records into new json file
     clean_file = { "knowledge-base": clean_records}
     with open("knowledge_base_clean.json", "w") as file:
         json.dump(clean_file, file, indent=4)
 
+    # Print details
+    totals = f"""
+    Number of qa chunks: {chunks_questions}
+    Number of policy chunks: {chunks_policies}
+    Number of how-to chunks: {chunks_steps}
+    Number of support chunks: {chunks_supports}
+    """
+    print(totals)
+
 
 # Phase 1
-clean_input_file('knowledge_base_noisy.json')
+load_knowledge_base('knowledge_base_noisy.json')
