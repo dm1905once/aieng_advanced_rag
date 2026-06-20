@@ -8,7 +8,7 @@ update_date: "Sat, 20 Jun 2026 01:33:23 UTC"
 stages:
   - id: 3051
     step: 52270
-    is_completed: false
+    is_completed: true
   - id: 3052
     step: 52271
     is_completed: false

@@ -24,21 +24,18 @@ def load_knowledge_base(path: str):
     with open(path, 'r') as file:
         input_file = json.load(file)
     for record in input_file['knowledge-base']:
-        clean_record = None
         if "question" in record:
-            clean_record = f"question: {record['question']}, answer: {record['answer']}"
-            questions.append(clean_record)
+            questions.append(f"question: {record['question']}, answer: {record['answer']}")
+            clean_records.append({"question": record["question"], "answer": record["answer"]})
         elif "policy" in record:
-            clean_record = f"policy: {record['policy']}"
-            policies.append(clean_record)
+            policies.append(f"policy: {record['policy']}")
+            clean_records.append({"policy": record["policy"]})
         elif "steps" in record:
-            clean_record = f"'how-to': {record['steps']}"
-            steps.append(clean_record)
+            steps.append(f"'how-to': {record['steps']}")
+            clean_records.append({"how-to" : record["steps"]})
         elif "support" in record:
-            clean_record = f"'support': {record['support']}"
-            supports.append(clean_record)
-        if clean_record:
-            clean_records.append({clean_record})
+            supports.append(f"'support': {record['support']}")
+            clean_records.append({"support": record["support"]})
 
     # Create langchain docs with metadata, 5 entries of each type per doc
     # splitter = RecursiveJsonSplitter(max_chunk_size=3000)
