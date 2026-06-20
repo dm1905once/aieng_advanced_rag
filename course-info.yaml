@@ -5,9 +5,7 @@ summary: "<p>Integrating retrieval-augmented generation into LLM applications is
   \ to enhancing response quality. While basic RAG methods provide a solid base, they\
   \ might not always achieve the superior quality you desire.<strong> </strong>This\
   \ project presents a range of advanced techniques applicable at various stages of\
-  \ the RAG pipeline to elevate your system's output.</p><br/><br/>Learn more at <a\
-  \ href=\"https://hyperskill.org/projects/521?utm_source=ide&utm_medium=ide&utm_campaign=ide&utm_content=project-card\"\
-  >https://hyperskill.org/projects/521</a>"
+  \ the RAG pipeline to elevate your system's output.</p>"
 programming_language: Python
 programming_language_version: 3.10
 environment: unittest

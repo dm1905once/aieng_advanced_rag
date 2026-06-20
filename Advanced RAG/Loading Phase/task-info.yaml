@@ -1,20 +1,17 @@
 type: edu
 files:
   - name: test/__init__.py
-    visible: true
     learner_created: false
   - name: test/tests.py
-    visible: true
     learner_created: false
   - name: main.py
     visible: true
     learner_created: false
   - name: tests.py
-    visible: true
     learner_created: false
-  - name: knowledge_base_clean.json
-    visible: true
-    learner_created: true
 feedback_link: https://hyperskill.org/projects/521/stages/3051/implement#comment
-status: Unchecked
+status: Failed
+feedback:
+  message: "Unexpected error in test #5"
+  time: "Sat, 20 Jun 2026 02:59:53 UTC"
 record: -1

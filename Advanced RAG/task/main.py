@@ -8,7 +8,7 @@ def create_lang_document(doc_list: list, metadata: dict) -> int:
     chunks = [doc_list[i:i + 5] for i in range(0, len(doc_list), 5)]
     for chunk in chunks:
         documents.append(Document(
-            page_content=' '.join(str(item).replace("'","") for item in chunk),
+            page_content="\n".join(chunk),
             metadata=metadata
         ))
     return len(chunks)
@@ -26,19 +26,19 @@ def load_knowledge_base(path: str):
     for record in input_file['knowledge-base']:
         clean_record = None
         if "question" in record:
-            clean_record = {"question": record["question"], "answer": record["answer"]}
+            clean_record = f"question: {record['question']}, answer: {record['answer']}"
             questions.append(clean_record)
         elif "policy" in record:
-            clean_record = {"policy": record["policy"]}
+            clean_record = f"policy: {record['policy']}"
             policies.append(clean_record)
         elif "steps" in record:
-            clean_record = {"how-to" : record["steps"]}
+            clean_record = f"'how-to': {record['steps']}"
             steps.append(clean_record)
         elif "support" in record:
-            clean_record = {"support": record["support"]}
+            clean_record = f"'support': {record['support']}"
             supports.append(clean_record)
         if clean_record:
-            clean_records.append(clean_record)
+            clean_records.append({clean_record})
 
     # Create langchain docs with metadata, 5 entries of each type per doc
     # splitter = RecursiveJsonSplitter(max_chunk_size=3000)
@@ -61,6 +61,21 @@ def load_knowledge_base(path: str):
     Number of support chunks: {chunks_supports}
     """
     print(totals)
+
+    # Print documents
+    for doc in documents:
+        if doc.metadata["category"] == "support":
+            print(doc.page_content)
+            print(doc.metadata)
+
+    for doc in documents:
+        if doc.metadata["category"] == "faq":
+            print(doc.page_content)
+            print(doc.metadata)
+
+
+    # [print(f"{doc.page_content}\n{doc.metadata}") for doc in documents if doc.metadata["category"] == "support"]
+    # [print(f"{doc.page_content}\n{doc.metadata}") for doc in documents if doc.metadata["category"] == "faq"]
 
 
 # Phase 1
