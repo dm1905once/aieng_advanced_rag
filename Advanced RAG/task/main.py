@@ -1,6 +1,9 @@
 import json
-from langchain_text_splitters import RecursiveJsonSplitter
+import os
+from dotenv import load_dotenv
 from langchain_core.documents import Document
+from langchain_openai import OpenAIEmbeddings
+from langchain_postgres import PGVector
 
 documents = []
 
@@ -13,7 +16,7 @@ def create_lang_document(doc_list: list, metadata: dict) -> int:
         ))
     return len(chunks)
 
-def load_knowledge_base(path: str):
+def load_knowledge_base(path: str, print_output: bool):
     questions = []
     policies = []
     steps = []
@@ -57,23 +60,45 @@ def load_knowledge_base(path: str):
     Number of how-to chunks: {chunks_steps}
     Number of support chunks: {chunks_supports}
     """
-    print(totals)
+    if print_output:
+        print(totals)
 
-    # Print documents
-    for doc in documents:
-        if doc.metadata["category"] == "support":
-            print(doc.page_content)
-            print(doc.metadata)
+        for doc in documents:
+            if doc.metadata["category"] == "support":
+                print(doc.page_content)
+                print(doc.metadata)
 
-    for doc in documents:
-        if doc.metadata["category"] == "faq":
-            print(doc.page_content)
-            print(doc.metadata)
+        for doc in documents:
+            if doc.metadata["category"] == "faq":
+                print(doc.page_content)
+                print(doc.metadata)
+
+        # [print(f"{doc.page_content}\n{doc.metadata}") for doc in documents if doc.metadata["category"] == "support"]
+        # [print(f"{doc.page_content}\n{doc.metadata}") for doc in documents if doc.metadata["category"] == "faq"]
 
 
-    # [print(f"{doc.page_content}\n{doc.metadata}") for doc in documents if doc.metadata["category"] == "support"]
-    # [print(f"{doc.page_content}\n{doc.metadata}") for doc in documents if doc.metadata["category"] == "faq"]
+def do_embed():
+    load_dotenv()
+    connection = os.getenv("PGVECTOR_CONNECTION_STRING")
+    embeddings = OpenAIEmbeddings(
+        model="text-embedding-3-large",
+        api_key=os.getenv("LITELLM_API_KEY"),
+        base_url=os.getenv("LITELLM_BASE_URL")
+    )
+    collection_name = "knowledge_base"
+
+    vector_store = PGVector(
+        embeddings=embeddings,
+        collection_name=collection_name,
+        connection=connection,
+        use_jsonb=True,
+    )
+
+    vector_store.add_documents(documents)
 
 
 # Phase 1
-load_knowledge_base('knowledge_base_noisy.json')
+load_knowledge_base('knowledge_base_noisy.json', False)
+
+# Phase 2
+do_embed()
