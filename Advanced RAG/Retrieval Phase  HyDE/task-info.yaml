@@ -13,6 +13,15 @@ files:
   - name: tests.py
     visible: true
     learner_created: false
+  - name: knowledge_base_clean.json
+    visible: true
+    learner_created: true
+  - name: knowledge_base_noisy.json
+    visible: true
+    learner_created: true
 feedback_link: https://hyperskill.org/projects/521/stages/3054/implement#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Sun, 21 Jun 2026 01:49:56 UTC"
 record: -1

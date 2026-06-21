@@ -2,6 +2,7 @@ import json
 import os
 from dotenv import load_dotenv
 from langchain_core.documents import Document
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import OpenAIEmbeddings
 from langchain_postgres import PGVector
 from langchain_openai import ChatOpenAI
@@ -141,6 +142,42 @@ def query(question: str):
         print(f"Question: {question}")
         print(serialized)
 
+def generate_hydes(question: str):
+    llm = get_llm()
+    vector_store = get_vector_store()
+
+    # Generate hypothetical question
+    template = """For the given question try to generate a hypothetical answer
+    Question: {question}
+    Generate 5 hypothetical answers in one or more of the following categories:
+        1. Question-Answer, expanding on similar questions the user may have
+            Example:
+                question: similarly worded question
+                answer: provide a relevant answer
+        2. Policy, explaining an existing policy that would answer the question
+            Example:
+                policy: describe a policy that would answer the question
+        3. How-to, describing steps to perform an action that would resolve the question
+            Example:
+                how-to: ["step 1 to resolve the question", "step 2 to resolve the question"]
+        4. Support, to describe helpful support answers to other similar problems
+            Example:
+                support: support can be reached from Monday-Friday to resolve the question
+    Important: do not print the results as a list or formatted text. Only print one answer per line. Do not leave blank lines between the answers.
+    """
+
+    prompt = ChatPromptTemplate.from_template(template)
+    query = prompt.format(question=question)
+    hypothetical_answer = llm.invoke(query).content
+    print(f"Hypothetical Document:\n{hypothetical_answer}")
+
+    # Retrieve from the vector using the hypothetical question as input
+    retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={"k": 2})
+    contexts = retriever.invoke(str(hypothetical_answer))
+    print("Contexts")
+    for context in contexts:
+        print(context.page_content)
+        print(context.metadata)
 
 # Phase 1
 #load_knowledge_base('knowledge_base_noisy.json', False)
@@ -149,4 +186,7 @@ def query(question: str):
 # embed_and_store()
 
 # Phase 3
-query(input())
+#query(input())
+
+# Phase 4
+generate_hydes(input())
