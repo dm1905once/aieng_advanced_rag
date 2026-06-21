@@ -1,13 +1,19 @@
-import os
+from hstest import StageTest, TestedProgram, CheckResult, dynamic_test
 import re
+import os
+import json
 
 import dotenv
 import psycopg
 from hstest import StageTest, CheckResult, dynamic_test
 
 dotenv.load_dotenv()
-
 class RAGTest(StageTest):
+    test_data = [
+        ("I need to return a shirt", r"return|question|policy|shipping|return|refund|30|days"),
+        ("I need to exchange a product", r"exchange|question|policy|shipping|exchange|refund|30|days"),
+    ]
+
     # first check postgresql connection string
     @dynamic_test
     def test1_PostgresConnection(self):
@@ -35,96 +41,46 @@ class RAGTest(StageTest):
             return CheckResult.wrong(f"Could not connect to the database. Encountered: {e}")
         return CheckResult.correct()
 
-    # first check postgresql connection string
-    @dynamic_test
-    def test2_CheckOrders(self):
-        connection_string = os.getenv("PGVECTOR_CONNECTION_STRING")
+    @dynamic_test(time_limit=0)
+    def test2_RunCode(self):
+        for question, expected_output in self.test_data:
+            program = TestedProgram("main.py")
+            program.start()
+            output = program.execute(question)
 
-        match = re.match(r"postgresql\+psycopg://(\w+):(\w+)@([\w.]+):(\d+)/(\w+)", connection_string)
-        user, password, host, port, dbname = match.groups()
+            if not re.findall(r"policy:|question:|answer:", output, re.IGNORECASE):
+                return CheckResult.wrong(f"The output does not match the expected output. Please check your code.")
+            if not re.findall(expected_output, output, re.IGNORECASE):
+                return CheckResult.wrong(f"The output does not match the expected output. Please check your code.")
+            if not re.findall(r"tags:|frequently|asked|questions|help|general|information|category:|qa|tags|shipping|returns|privacy|category|policy", output, re.IGNORECASE):
+                return CheckResult.wrong(f"The output does not contain the expected metadata. Ensure that you print the metadata for each chunk.")
+            metadata = re.findall(r"({.*?})", output, re.DOTALL)
+            if not metadata:
+                return CheckResult.wrong(f"The output does not contain the expected metadata. Ensure that you print the metadata for each chunk.")
 
-        # create a connection string for psycopg
-        conn_string = f"dbname={dbname} user={user} password={password} host={host} port={port}"
-        # attempt to connect to the database and check if it has at least 3 tables
-        try:
-            conn = psycopg.connect(conn_string)
-            cursor = conn.cursor()
-            # check if the database has at least 3 tables
-            cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public';")
-            count = cursor.fetchone()[0]
-            if count < 3:
-                return CheckResult.wrong(f"The database has less than 3 tables. Found: {count}")
-            # check if the database has a table called 'orders'
-            cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_name='orders';")
-            count = cursor.fetchone()[0]
-            if count == 0:
-                return CheckResult.wrong("The database does not have a table called 'orders'.")
+            metadata = re.search(r"{.*}", output)
+            if not metadata:
+                return CheckResult.wrong(f"The output does not contain the metadata. Please check your code.")
 
-            # check if the orders table contains columns: 'Order Date', 'Order ID', 'Product ID', 'Product Name', 'Product Category', 'Purchase Address', 'Price Each'
-            cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='orders';")
-            columns = [row[0] for row in cursor.fetchall()]
-            required_columns = ['Order Date', 'Order ID', 'Product ID', 'Product Name', 'Product Category', 'Purchase Address', 'Price Each']
-            for column in required_columns:
-                if column not in columns:
-                    return CheckResult.wrong(f"The orders table does not have a column called '{column}'.")
-            # check if the orders table contains at least 100 rows
-            cursor.execute("SELECT COUNT(*) FROM orders;")
-            count = cursor.fetchone()[0]
-            if count < 100:
-                return CheckResult.wrong(f"The orders table has too few rows. Found: {count}")
-            conn.close()
+            tags = re.search(r"'tags': \[(.*?)\]", metadata.group(0))
+            if not tags:
+                return CheckResult.wrong(f"The output does not contain the tags. Please check your code.")
+            category = re.search(r"'category': '(.*?)'", metadata.group(0))
+            if not category:
+                return CheckResult.wrong(f"The output does not contain the category. Found: {metadata.group(0)}")
 
-        except psycopg.OperationalError as e:
-            return CheckResult.wrong(f"Could not connect to the database. Encountered: {e}")
-        except psycopg.DatabaseError as e:
-            return CheckResult.wrong(f"Could not connect to the database. Encountered: {e}")
+            if not tags.group(1):
+                return CheckResult.wrong(f"The tags are empty. Please check your code.")
 
-        except Exception as e:
-            return CheckResult.wrong(f"Could not connect to the database. Encountered: {e}")
-        return CheckResult.correct()
+            if not category.group(1):
+                return CheckResult.wrong(f"The category is empty. Please check your code.")
 
-    @dynamic_test
-    def test3_CheckEmbeddings(self):
-        connection_string = os.getenv("PGVECTOR_CONNECTION_STRING")
+            if not re.search(r"shipping|returns|privacy", tags.group(1), re.IGNORECASE):
+                return CheckResult.wrong(f"The documents do not contain the expected tags. Found: {tags.group(1)}")
 
-        match = re.match(r"postgresql\+psycopg://(\w+):(\w+)@([\w.]+):(\d+)/(\w+)", connection_string)
-        user, password, host, port, dbname = match.groups()
+            if not re.search(r"policy", category.group(1), re.IGNORECASE):
+                return CheckResult.wrong(f"The documents do not contain the expected category. Found: {category.group(1)}")
 
-        # create a connection string for psycopg
-        conn_string = f"dbname={dbname} user={user} password={password} host={host} port={port}"
-        # attempt to connect to the database and check if it has at least 3 tables
-        try:
-            conn = psycopg.connect(conn_string)
-            cursor = conn.cursor()
-
-            # check if the database has a table called 'langchain_pg_embedding'
-            cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_name='langchain_pg_embedding';")
-            count = cursor.fetchone()[0]
-            if count == 0:
-                return CheckResult.wrong("The database does not have a table for embeddings. Did you use LangChain's PGVector wrapper?")
-
-            # check if the database has a table called 'langchain_pg_collection'
-            cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_name='langchain_pg_collection';")
-            count = cursor.fetchone()[0]
-            if count == 0:
-                return CheckResult.wrong("The database does not have a table for collections. Did you use LangChain's PGVector wrapper?")
-
-            # check if the langchain_pg_embedding table contains columns: 'embedding', 'document', 'id', 'collection_id', and 'cmetadata'
-            cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='langchain_pg_embedding';")
-            columns = [row[0] for row in cursor.fetchall()]
-            required_columns = ['embedding', 'document', 'id', 'collection_id', 'cmetadata']
-            for column in required_columns:
-                if column not in columns:
-                    return CheckResult.wrong(f"The LangChain embeddings table does not have a column called '{column}'. Did you use LangChain's PGVector wrapper?")
-            conn.close()
-
-        except psycopg.OperationalError as e:
-            return CheckResult.wrong(f"Could not connect to the database. Encountered: {e}")
-        except psycopg.DatabaseError as e:
-            return CheckResult.wrong(f"Could not connect to the database. Encountered: {e}")
-
-        except Exception as e:
-            return CheckResult.wrong(f"Could not connect to the database. Encountered: {e}")
         return CheckResult.correct()
 
 

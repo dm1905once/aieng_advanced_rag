@@ -4,8 +4,13 @@ from dotenv import load_dotenv
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 from langchain_postgres import PGVector
+from langchain_openai import ChatOpenAI
+
 
 documents = []
+load_dotenv()
+api_key = os.getenv("LITELLM_API_KEY")
+base_url = os.getenv("LITELLM_BASE_URL")
 
 def create_lang_document(doc_list: list, metadata: dict) -> int:
     chunks = [doc_list[i:i + 5] for i in range(0, len(doc_list), 5)]
@@ -77,13 +82,13 @@ def load_knowledge_base(path: str, print_output: bool):
         # [print(f"{doc.page_content}\n{doc.metadata}") for doc in documents if doc.metadata["category"] == "faq"]
 
 
-def do_embed():
-    load_dotenv()
+
+def get_vector_store() ->PGVector:
     connection = os.getenv("PGVECTOR_CONNECTION_STRING")
     embeddings = OpenAIEmbeddings(
         model="text-embedding-3-large",
-        api_key=os.getenv("LITELLM_API_KEY"),
-        base_url=os.getenv("LITELLM_BASE_URL")
+        api_key=api_key,
+        base_url=base_url
     )
     collection_name = "knowledge_base"
 
@@ -93,12 +98,55 @@ def do_embed():
         connection=connection,
         use_jsonb=True,
     )
+    return vector_store
 
+def embed_and_store():
+    vector_store = get_vector_store()
     vector_store.add_documents(documents)
+
+def get_llm(model="gpt-4o-mini") ->ChatOpenAI:
+    llm = ChatOpenAI(
+        model=model,
+        api_key=api_key,
+        base_url=base_url
+    )
+    return llm
+
+def query(question: str):
+    vector_store = get_vector_store()
+    llm = get_llm()
+    messages = [
+            {
+                "role": "system",
+                "content": """
+                    You are a support assistant facilitating access to a knowledgebase.
+                    For each user question , you need to decompose the question and provide 3 additional possible related questions that the human might ask next.
+                    The format of the output is one JSON object. 
+                    Example:
+                       {"additional_questions" : ["question 1","question 2","question 3"]}
+                """
+            },
+            {
+                "role": "user",
+                "content": question
+            }
+    ]
+    response = llm.invoke(messages)
+    responses= json.loads(str(response.text))
+    for question in responses["additional_questions"]:
+        retrieved_docs = vector_store.similarity_search(question, k=2)
+        serialized = "\n\n".join(
+            (f"{doc.page_content}\n{doc.metadata}\n") for doc in retrieved_docs
+        )
+        print(f"Question: {question}")
+        print(serialized)
 
 
 # Phase 1
-load_knowledge_base('knowledge_base_noisy.json', False)
+#load_knowledge_base('knowledge_base_noisy.json', False)
 
 # Phase 2
-do_embed()
+# embed_and_store()
+
+# Phase 3
+query(input())
