@@ -9,8 +9,7 @@ from hstest import TestedProgram
 dotenv.load_dotenv()
 class RAGTest(StageTest):
     test_data = [
-        ("I need to return a shirt", r"return|question|policy|shipping|return|refund|30|days"),
-        ("I need to exchange a product", r"exchange|question|policy|shipping|exchange|refund|30|days"),
+        ("I need details about my order 78a9. Also, what is the return policy for damaged items?", r"return|category|item|damaged|return|refund|30|days"),
     ]
 
     # first check postgresql connection string
@@ -52,35 +51,18 @@ class RAGTest(StageTest):
             if not re.findall(expected_output, output, re.IGNORECASE):
                 return CheckResult.wrong(f"The output does not match the expected output. Please check your code.")
 
-            metadata = re.search(r"{.*}", output)
-            if not metadata:
-                return CheckResult.wrong(f"The output does not contain the metadata. Please check your code.")
-
-            tags = re.search(r"'tags': \[(.*?)\]", metadata.group(0))
-            if not tags:
-                return CheckResult.wrong(f"The output does not contain the tags. Please check your code.")
-            category = re.search(r"'category': '(.*?)'", metadata.group(0))
-            if not category:
-                return CheckResult.wrong(f"The output does not contain the category. Please check your code.")
-
-            relevance_score = re.search(r"'relevance_score': (.*?)}", metadata.group(0))
-            if not relevance_score:
-                return CheckResult.wrong(f"The output does not contain the relevance score. Did you use Cohere to rank the retrieved documents?")
-
-            if not (0 <= float(relevance_score.group(1)) <= 1):
-                return CheckResult.wrong(f"The relevance score is not between 0 and 1. Please check your code.")
-
-            if not tags.group(1):
-                return CheckResult.wrong(f"The tags are empty. Please check your code.")
-
-            if not category.group(1):
-                return CheckResult.wrong(f"The category is empty. Please check your code.")
-
-            if not re.search(r"shipping|returns|privacy", tags.group(1), re.IGNORECASE):
-                return CheckResult.wrong(f"The documents do not contain the expected tags. Please check your code.")
-
-            if not re.search(r"policy|question|answer", category.group(1), re.IGNORECASE):
-                return CheckResult.wrong(f"The documents do not contain the expected category. Please check your code.")
+            order_details = re.search(r"\[\((.*?)\)\]", output)
+            if not order_details:
+                return CheckResult.wrong(f"The output does not contain the order details. Are you retrieving the order details from the database?")
+            order_details = order_details.group(1).split(", ")
+            if not re.search(r"78a9", order_details[1], re.IGNORECASE):
+                return CheckResult.wrong(f"The output does not contain the correct order ID. Found: {order_details[1]}")
+            if not re.search(r"7b87", order_details[2], re.IGNORECASE):
+                return CheckResult.wrong(f"The output does not contain the correct item ID. Found: {order_details[2]}")
+            if not re.search(r"USB-C Charging Cable", order_details[3], re.IGNORECASE):
+                return CheckResult.wrong(f"The output does not contain the correct item name. Found: {order_details[3]}")
+            if not re.search(r"Sports", order_details[4], re.IGNORECASE):
+                return CheckResult.wrong(f"The output does not contain the correct item category. Found: {order_details[4]}")
 
         return CheckResult.correct()
 

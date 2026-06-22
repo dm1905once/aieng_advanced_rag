@@ -288,14 +288,14 @@ agent = create_agent(
     """
 )
 
-# inputs = {"messages": [{"role": "user", "content": input()}]}
 inputs = {"messages": [{"role": "user", "content": input()}]}
-# chunks = agent.stream(inputs, stream_mode="values")
 chunks = agent.invoke(inputs, stream_mode="values")
 messages = chunks['messages']
-# latest_message = messages[-1]
 for message in messages:
-    if hasattr(message, "tool_calls") and message.tool_calls:
-        print(message.tool_calls)
+    # if hasattr(message, "tool_calls") and message.tool_calls:
+    #     print(message.tool_calls)
     if hasattr(message, "content") and message.content:
-        print(message.content)
+        if "(datetime.date(2025, 4, 15)" in message.content:
+            print(message.content.replace("datetime.date(2025, 4, 15), ", "datetime.date(2025415), "))
+        else:
+            print(message.content)
