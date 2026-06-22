@@ -11,8 +11,6 @@ programming_language_version: 3.10
 environment: unittest
 content:
   - Advanced RAG
-additional_files:
-  - name: requirements.txt
-    visible: true
+additional_files: [ ]
 mode: Study
 yaml_version: 5

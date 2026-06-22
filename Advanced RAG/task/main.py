@@ -1,19 +1,22 @@
 import json
 import os
 from dotenv import load_dotenv
+from langchain_community.utilities import SQLDatabase
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import OpenAIEmbeddings
 from langchain_postgres import PGVector
 from langchain_openai import ChatOpenAI
 from langchain_cohere import CohereRerank
-
+from langchain.tools import tool
+from langchain.agents import create_agent
 
 documents = []
 load_dotenv()
 api_key = os.getenv("LITELLM_API_KEY")
 base_url = os.getenv("LITELLM_BASE_URL")
 cohere_key = os.getenv("COHERE_API_KEY")
+db_connection = os.getenv("PGVECTOR_CONNECTION_STRING")
 
 def create_lang_document(doc_list: list, metadata: dict) -> int:
     chunks = [doc_list[i:i + 5] for i in range(0, len(doc_list), 5)]
@@ -164,7 +167,7 @@ def get_hyde_template() -> str:
     Important: do not print the results as a list or formatted text. Only print one answer per line. Do not leave blank lines between the answers.
     """
 
-def generate_hydes(question: str, top_n: int):
+def generate_hydes(question: str, top_n: int, print_output: bool = False):
     llm = get_llm()
     vector_store = get_vector_store()
 
@@ -178,30 +181,41 @@ def generate_hydes(question: str, top_n: int):
     # Retrieve from the vector using the hypothetical question as input
     retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={"k": top_n})
     contexts = retriever.invoke(str(hypothetical_answer))
-    print("Contexts")
-    for context in contexts:
-        print(context.page_content)
-        print(context.metadata)
+    if print_output:
+        print("Contexts")
+        for context in contexts:
+            print(context.page_content)
+            print(context.metadata)
 
-
-def rerank_context(question: str, top_n: int):
+@tool
+def rerank_context(question: str, top_n: int = 2, print_output: bool = False) -> list:
+    """
+    Search the vector knowledgebase for chunks of relevant context that would help answer a user's question
+    :param question: user question
+    :param top_n: number of relevant chunks to return
+    :param print_output: print output to console or not
+    :return: list with relevant chunks
+    """
     llm = get_llm()
     vector_store = get_vector_store()
+    relevant_context = []
 
     # Generate hypothetical question
     template = get_hyde_template()
     prompt = ChatPromptTemplate.from_template(template)
     query = prompt.format(question=question)
     hypothetical_answer = llm.invoke(query).content
-    print(f"Hypothetical Document:\n{hypothetical_answer}")
+    if print_output:
+        print(f"Hypothetical Document:\n{hypothetical_answer}")
 
     # Retrieve from the vector using the hypothetical question as input
     retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={"k": top_n})
     contexts = retriever.invoke(str(hypothetical_answer))
-    print("\nContexts:")
-    for context in contexts:
-        print(context.page_content)
-        # print(context.metadata)
+    if print_output:
+        print("\nContexts:")
+        for context in contexts:
+            print(context.page_content)
+            # print(context.metadata)
 
     # Re-rank chunks by relevance score, using Cohere's re-ranker
     reranker = CohereRerank(
@@ -212,17 +226,41 @@ def rerank_context(question: str, top_n: int):
     compressed_contexts = reranker.rerank(
         documents=contexts,
         query=query,
-        top_n=2
+        top_n=top_n
     )
 
-    print("\nCompressed Contexts:")
     for compressed_context in compressed_contexts:
-        # print(compressed_context)
-        # index = compressed_context["index"]
-        index = 1
-        contexts[index].metadata.update({'relevance_score': compressed_context['relevance_score']})
-        print(contexts[index].page_content)
-        print(contexts[index].metadata)
+        relevant_context.append(contexts[compressed_context["index"]].page_content)
+
+    if print_output:
+        print("\nCompressed Contexts:")
+        for compressed_context in compressed_contexts:
+            # print(compressed_context)
+            index = compressed_context["index"]
+            contexts[index].metadata.update({'relevance_score': compressed_context['relevance_score']})
+            print(contexts[index].page_content)
+            print(contexts[index].metadata)
+
+    return relevant_context
+
+@tool
+def query_orders_table(query: str):
+    """
+    Connects to the orders table to retrieve records associated to orders
+    :param query: SQL query
+    :return: query output
+
+    The orders table contains the following columns:
+    "Order Date" DATE,
+    "Order ID" VARCHAR(10) NOT NULL,
+    "Product ID" VARCHAR(10),
+    "Product Name" VARCHAR(60),
+    "Product Category" VARCHAR(60),
+    "Purchase Address" VARCHAR(60),
+    "Price Each" NUMERIC(10, 2)
+    """
+    db = SQLDatabase.from_uri(db_connection)
+    return db.run(query)
 
 
 # Phase 1
@@ -238,4 +276,26 @@ def rerank_context(question: str, top_n: int):
 # context = generate_hydes(input(), 2)
 
 # Phase 5
-rerank_context(input(), 10)
+#rerank_context(input(), 10, False)
+
+# Phase 6
+
+agent = create_agent(
+    model=get_llm(),
+    tools=[rerank_context, query_orders_table],
+    system_prompt="""
+    You are a helpful agent that takes users questions and always responds with at least one relevant answer by searching the knowledgebase or querying the orders table
+    """
+)
+
+# inputs = {"messages": [{"role": "user", "content": input()}]}
+inputs = {"messages": [{"role": "user", "content": input()}]}
+# chunks = agent.stream(inputs, stream_mode="values")
+chunks = agent.invoke(inputs, stream_mode="values")
+messages = chunks['messages']
+# latest_message = messages[-1]
+for message in messages:
+    if hasattr(message, "tool_calls") and message.tool_calls:
+        print(message.tool_calls)
+    if hasattr(message, "content") and message.content:
+        print(message.content)
