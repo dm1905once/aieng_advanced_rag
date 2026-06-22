@@ -6,12 +6,14 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import OpenAIEmbeddings
 from langchain_postgres import PGVector
 from langchain_openai import ChatOpenAI
+from langchain_cohere import CohereRerank
 
 
 documents = []
 load_dotenv()
 api_key = os.getenv("LITELLM_API_KEY")
 base_url = os.getenv("LITELLM_BASE_URL")
+cohere_key = os.getenv("COHERE_API_KEY")
 
 def create_lang_document(doc_list: list, metadata: dict) -> int:
     chunks = [doc_list[i:i + 5] for i in range(0, len(doc_list), 5)]
@@ -142,14 +144,10 @@ def query(question: str):
         print(f"Question: {question}")
         print(serialized)
 
-def generate_hydes(question: str):
-    llm = get_llm()
-    vector_store = get_vector_store()
-
-    # Generate hypothetical question
-    template = """For the given question try to generate a hypothetical answer
+def get_hyde_template() -> str:
+    return  """For the given question try to generate a hypothetical answer
     Question: {question}
-    Generate 5 hypothetical answers in one or more of the following categories:
+    Generate 5 hypothetical answers in one or more of the following categories, giving more weight to policy than questions:
         1. Question-Answer, expanding on similar questions the user may have
             Example:
                 question: similarly worded question
@@ -166,18 +164,66 @@ def generate_hydes(question: str):
     Important: do not print the results as a list or formatted text. Only print one answer per line. Do not leave blank lines between the answers.
     """
 
+def generate_hydes(question: str, top_n: int):
+    llm = get_llm()
+    vector_store = get_vector_store()
+
+    # Generate hypothetical question
+    template = get_hyde_template()
     prompt = ChatPromptTemplate.from_template(template)
     query = prompt.format(question=question)
     hypothetical_answer = llm.invoke(query).content
     print(f"Hypothetical Document:\n{hypothetical_answer}")
 
     # Retrieve from the vector using the hypothetical question as input
-    retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={"k": 2})
+    retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={"k": top_n})
     contexts = retriever.invoke(str(hypothetical_answer))
     print("Contexts")
     for context in contexts:
         print(context.page_content)
         print(context.metadata)
+
+
+def rerank_context(question: str, top_n: int):
+    llm = get_llm()
+    vector_store = get_vector_store()
+
+    # Generate hypothetical question
+    template = get_hyde_template()
+    prompt = ChatPromptTemplate.from_template(template)
+    query = prompt.format(question=question)
+    hypothetical_answer = llm.invoke(query).content
+    print(f"Hypothetical Document:\n{hypothetical_answer}")
+
+    # Retrieve from the vector using the hypothetical question as input
+    retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={"k": top_n})
+    contexts = retriever.invoke(str(hypothetical_answer))
+    print("\nContexts:")
+    for context in contexts:
+        print(context.page_content)
+        # print(context.metadata)
+
+    # Re-rank chunks by relevance score, using Cohere's re-ranker
+    reranker = CohereRerank(
+        model="rerank-english-v3.0",
+        cohere_api_key=cohere_key
+    )
+
+    compressed_contexts = reranker.rerank(
+        documents=contexts,
+        query=query,
+        top_n=2
+    )
+
+    print("\nCompressed Contexts:")
+    for compressed_context in compressed_contexts:
+        # print(compressed_context)
+        # index = compressed_context["index"]
+        index = 1
+        contexts[index].metadata.update({'relevance_score': compressed_context['relevance_score']})
+        print(contexts[index].page_content)
+        print(contexts[index].metadata)
+
 
 # Phase 1
 #load_knowledge_base('knowledge_base_noisy.json', False)
@@ -189,4 +235,7 @@ def generate_hydes(question: str):
 #query(input())
 
 # Phase 4
-generate_hydes(input())
+# context = generate_hydes(input(), 2)
+
+# Phase 5
+rerank_context(input(), 10)

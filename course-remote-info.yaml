@@ -4,7 +4,7 @@ hyperskill_project:
   is_template_based: false
   use_ide: true
   environment: unittest
-update_date: "Sat, 20 Jun 2026 21:01:46 UTC"
+update_date: "Mon, 22 Jun 2026 03:26:21 UTC"
 stages:
   - id: 3051
     step: 52270
@@ -20,7 +20,7 @@ stages:
     is_completed: true
   - id: 3055
     step: 52275
-    is_completed: false
+    is_completed: true
   - id: 3056
     step: 52276
     is_completed: false

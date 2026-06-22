@@ -3,12 +3,14 @@ import re
 
 import dotenv
 import psycopg
-from hstest import StageTest, CheckResult, dynamic_test, TestedProgram
+from hstest import StageTest, CheckResult, dynamic_test
+from hstest import TestedProgram
 
 dotenv.load_dotenv()
 class RAGTest(StageTest):
     test_data = [
-        ("I need to return a damaged product. ", r"cancel|question|policy|packaging|return|refund|30|days"),
+        ("I need to return a shirt", r"return|question|policy|shipping|return|refund|30|days"),
+        ("I need to exchange a product", r"exchange|question|policy|shipping|exchange|refund|30|days"),
     ]
 
     # first check postgresql connection string
@@ -61,6 +63,13 @@ class RAGTest(StageTest):
             if not category:
                 return CheckResult.wrong(f"The output does not contain the category. Please check your code.")
 
+            relevance_score = re.search(r"'relevance_score': (.*?)}", metadata.group(0))
+            if not relevance_score:
+                return CheckResult.wrong(f"The output does not contain the relevance score. Did you use Cohere to rank the retrieved documents?")
+
+            if not (0 <= float(relevance_score.group(1)) <= 1):
+                return CheckResult.wrong(f"The relevance score is not between 0 and 1. Please check your code.")
+
             if not tags.group(1):
                 return CheckResult.wrong(f"The tags are empty. Please check your code.")
 
@@ -70,7 +79,7 @@ class RAGTest(StageTest):
             if not re.search(r"shipping|returns|privacy", tags.group(1), re.IGNORECASE):
                 return CheckResult.wrong(f"The documents do not contain the expected tags. Please check your code.")
 
-            if not re.search(r"policy|qa", category.group(1), re.IGNORECASE):
+            if not re.search(r"policy|question|answer", category.group(1), re.IGNORECASE):
                 return CheckResult.wrong(f"The documents do not contain the expected category. Please check your code.")
 
         return CheckResult.correct()

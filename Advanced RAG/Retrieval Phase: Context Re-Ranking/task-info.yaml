@@ -1,5 +1,4 @@
 type: edu
-custom_name: "Retrieval Phase: Context Re-Ranking"
 files:
   - name: main.py
     visible: true
@@ -13,6 +12,15 @@ files:
   - name: tests.py
     visible: true
     learner_created: false
+  - name: knowledge_base_clean.json
+    visible: true
+    learner_created: false
+  - name: knowledge_base_noisy.json
+    visible: true
+    learner_created: false
 feedback_link: https://hyperskill.org/projects/521/stages/3055/implement#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Sun, 21 Jun 2026 05:29:07 UTC"
 record: -1

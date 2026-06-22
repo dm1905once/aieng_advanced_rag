@@ -1,5 +1,4 @@
 type: edu
-custom_name: "Retrieval Phase: Routing"
 files:
   - name: main.py
     visible: true
@@ -11,6 +10,12 @@ files:
     visible: true
     learner_created: false
   - name: tests.py
+    visible: true
+    learner_created: false
+  - name: knowledge_base_clean.json
+    visible: true
+    learner_created: false
+  - name: knowledge_base_noisy.json
     visible: true
     learner_created: false
 feedback_link: https://hyperskill.org/projects/521/stages/3056/implement#comment
